@@ -18,9 +18,9 @@ type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
 	Redis    RedisConfig    `mapstructure:"redis"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
 	App      App            `mapstructure:"app"`
-	OTPCode  OTPCode        `mapstructure:"OTPCode"`
+	Rabbit   RabbitConfig   `mapstructure:"rabbit"`
+	GRPC     GRPCConfig     `mapstructure:"grpc"`
 }
 
 type ServerConfig struct {
@@ -51,27 +51,29 @@ type RedisConfig struct {
 	PoolSize int    `mapstructure:"pool_size"`
 }
 
-type JWTConfig struct {
-	AccessTokenExpireDuration  time.Duration `mapstructure:"access_token_duration"`
-	RefreshTokenExpireDuration time.Duration `mapstructure:"refresh_token_duration"`
-	Secret                     string        `mapstructure:"secret"`
-	RefreshSecret              string        `mapstructure:"refresh_secret"`
+type RabbitConfig struct {
+	Host            string        `mapstructure:"host"`
+	Port            string        `mapstructure:"port"`
+	User            string        `mapstructure:"user"`
+	Password        string        `mapstructure:"password"`
+	WorkerCount     int           `mapstructure:"worker_count"`
+	MaxFFmpegWorker int           `mapstructure:"max_ffmpeg_worker"`
+	JobTimeout      time.Duration `mapstructure:"job_timeout_minutes"`
+}
+type GRPCConfig struct {
+	Host string `mapstructure:"grpc_host"`
+	Port string `mapstructure:"grpc_port"`
 }
 
 type App struct {
-	Environment string `mapstructure:"environment"` // development, production, test
+	Environment string `mapstructure:"environment"` // debug, release,  test
 	LogLevel    string `mapstructure:"log_level"`   // debug, info, warn, error
-}
-
-type OTPCode struct {
-	ExpireTime time.Duration `mapstructure:"expire_time"`
-	TryAttempt int           `mapstructure:"try_attempt"`
 }
 
 var Cfg *Config
 
 func Load() {
-	viper.SetConfigFile(".env")
+	viper.SetConfigFile("../.env")
 	viper.SetConfigType("env")
 
 	viper.AutomaticEnv()
@@ -113,13 +115,19 @@ func setDefaults() {
 	viper.SetDefault("redis.pool_size", 10)
 	viper.SetDefault("redis.password", "StrongPasswordHere")
 
-	viper.SetDefault("jwt.access_token_duration", 15*time.Minute)
-	viper.SetDefault("jwt.refresh_token_duration", 24*time.Hour)
-
 	viper.SetDefault("app.environment", "debug")
 	viper.SetDefault("app.log_level", "debug")
-	viper.SetDefault("expire_time", 3*time.Minute)
-	viper.SetDefault("try_attempt", 3)
+
+	viper.SetDefault("rabbit.host", "localhost")
+	viper.SetDefault("rabbit.port", "5672")
+	viper.SetDefault("rabbit.user", "guest")
+	viper.SetDefault("rabbit.password", "guest")
+	viper.SetDefault("rabbit.worker_count", 5)
+	viper.SetDefault("rabbit.max_ffmpeg_worker", 4)
+	viper.SetDefault("rabbit.job_timeout_minutes", 30)
+
+	viper.SetDefault("grpc.grpc_host", "localhost")
+	viper.SetDefault("grpc.grpc_port", 50051)
 }
 
 /*

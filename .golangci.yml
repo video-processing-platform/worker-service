@@ -1,0 +1,29 @@
+version: "2"
+
+linters:
+  default: none
+
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - revive
+    - gosec
+    - ineffassign
+    - unused
+    - bodyclose
+    - contextcheck
+    - misspell
+    - errorlint
+    - copyloopvar
+    - nilerr
+    - prealloc
+
+  settings:
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+
+        - name: package-comments
+          disabled: true
