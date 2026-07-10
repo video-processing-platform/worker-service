@@ -3,15 +3,16 @@ package repository
 import (
 	"fmt"
 	"github.com/alimarzban99/video-processor-service/internal/models"
+	"github.com/alimarzban99/video-processor-service/pkg/database"
 	customerrors "github.com/alimarzban99/video-processor-service/pkg/errors"
-	"gorm.io/gorm"
 )
 
 type VideoRepository struct {
 	*GenericRepository[models.Video]
 }
 
-func NewVideoRepository(db *gorm.DB) *VideoRepository {
+func NewVideoRepository() *VideoRepository {
+	db := database.DB()
 	return &VideoRepository{
 		GenericRepository: NewGenericRepository[models.Video](db),
 	}

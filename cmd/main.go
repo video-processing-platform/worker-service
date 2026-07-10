@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/alimarzban99/video-processor-service/config"
+	grpcclient "github.com/alimarzban99/video-processor-service/internal/grpc"
 	"github.com/alimarzban99/video-processor-service/internal/repository"
 	"github.com/alimarzban99/video-processor-service/internal/services"
 	"github.com/alimarzban99/video-processor-service/internal/workers"
@@ -11,6 +12,7 @@ import (
 	"github.com/alimarzban99/video-processor-service/pkg/logger"
 	"github.com/alimarzban99/video-processor-service/pkg/metrics"
 	"github.com/alimarzban99/video-processor-service/pkg/rabbitmq"
+	"github.com/alimarzban99/video-processor-service/pkg/storage"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"log"
@@ -51,59 +53,43 @@ func main() {
 	}
 	defer cache.Close()
 
-	rmq, err := rabbitmq.New()
+	minioStorage, err := storage.NewMinio()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rabbitMQ, err := rabbitmq.New()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	ffmpeg := services.NewFFmpegService()
-
-	cfg := config.Cfg.Rabbit
-
-	db := database.DB()
-
-	videoRepo := repository.NewVideoRepository(db)
-	videoService := services.NewVideoService(ffmpeg, videoRepo, cfg.MaxFFmpegWorker, cfg.JobTimeout)
+	videoRepo := repository.NewVideoRepository()
+	notification, _ := grpcclient.NewNotificationClient()
+	videoService := services.NewVideoService(minioStorage, ffmpeg, videoRepo, notification)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	consumer := workers.NewConsumer(
-		ctx,
-		rmq,
-		videoService,
-		cfg.WorkerCount,
-	)
+	consumer := workers.NewConsumer(ctx, rabbitMQ, videoService)
 
 	go func() {
 
 		if err := consumer.Start(); err != nil {
-			log.Printf(
-				"consumer stopped: %v",
-				err,
-			)
+			log.Printf("consumer stopped: %v", err)
 		}
 
 	}()
 
 	signalChan := make(chan os.Signal, 1)
 
-	signal.Notify(
-		signalChan,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-	)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 
 	sig := <-signalChan
 
-	log.Printf(
-		"received signal: %s",
-		sig.String(),
-	)
+	log.Printf("received signal: %s", sig.String())
 
 	cancel()
 	consumer.Shutdown()
 
-	log.Println(
-		"application stopped",
-	)
+	log.Println("application stopped")
 }

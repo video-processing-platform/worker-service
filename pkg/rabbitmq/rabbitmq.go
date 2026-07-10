@@ -2,6 +2,7 @@ package rabbitmq
 
 import (
 	"fmt"
+	"github.com/alimarzban99/video-processor-service/config"
 	customerrors "github.com/alimarzban99/video-processor-service/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -20,16 +21,14 @@ type RabbitMQ struct {
 
 func New() (*RabbitMQ, error) {
 
-	url := "amqp://guest:guest@localhost:5672/"
+	cfg := config.Cfg.Rabbit
+	url := fmt.Sprintf("amqp://%s:%s@%s:%s/", cfg.User, cfg.Password, cfg.Host, cfg.Port)
+
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, &customerrors.StorageError{
 			Operation: "rabbitmq connect",
-			Err: fmt.Errorf(
-				"%w: %w",
-				customerrors.ErrRabbitMQConnection,
-				err,
-			),
+			Err:       fmt.Errorf("%w: %w", customerrors.ErrRabbitMQConnection, err),
 		}
 	}
 
@@ -37,11 +36,7 @@ func New() (*RabbitMQ, error) {
 	if err != nil {
 		return nil, &customerrors.StorageError{
 			Operation: "rabbitmq create channel",
-			Err: fmt.Errorf(
-				"%w: %w",
-				customerrors.ErrRabbitMQChannel,
-				err,
-			),
+			Err:       fmt.Errorf("%w: %w", customerrors.ErrRabbitMQChannel, err),
 		}
 	}
 
@@ -50,11 +45,7 @@ func New() (*RabbitMQ, error) {
 		return nil, err
 	}
 
-	err = ch.Qos(
-		5,
-		0,
-		false,
-	)
+	err = ch.Qos(5, 0, false)
 
 	if err != nil {
 		return nil, err

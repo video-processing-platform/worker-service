@@ -21,6 +21,7 @@ type Config struct {
 	App      App            `mapstructure:"app"`
 	Rabbit   RabbitConfig   `mapstructure:"rabbit"`
 	GRPC     GRPCConfig     `mapstructure:"grpc"`
+	Storage  MinioConfig    `mapstructure:"storage"`
 }
 
 type ServerConfig struct {
@@ -52,17 +53,25 @@ type RedisConfig struct {
 }
 
 type RabbitConfig struct {
-	Host            string        `mapstructure:"host"`
-	Port            string        `mapstructure:"port"`
-	User            string        `mapstructure:"user"`
-	Password        string        `mapstructure:"password"`
-	WorkerCount     int           `mapstructure:"worker_count"`
-	MaxFFmpegWorker int           `mapstructure:"max_ffmpeg_worker"`
-	JobTimeout      time.Duration `mapstructure:"job_timeout_minutes"`
+	Host            string `mapstructure:"host"`
+	Port            string `mapstructure:"port"`
+	User            string `mapstructure:"user"`
+	Password        string `mapstructure:"password"`
+	WorkerCount     int    `mapstructure:"worker_count"`
+	MaxFFmpegWorker int    `mapstructure:"max_ffmpeg_worker"`
+	JobTimeout      int    `mapstructure:"job_timeout_minutes"`
 }
 type GRPCConfig struct {
 	Host string `mapstructure:"grpc_host"`
 	Port string `mapstructure:"grpc_port"`
+}
+
+type MinioConfig struct {
+	Endpoint  string `mapstructure:"endpoint"`
+	AccessKey string `mapstructure:"access_key"`
+	SecretKey string `mapstructure:"secret_key"`
+	Bucket    string `mapstructure:"bucket"`
+	UseSSL    bool   `mapstructure:"use_ssl"`
 }
 
 type App struct {
@@ -122,12 +131,18 @@ func setDefaults() {
 	viper.SetDefault("rabbit.port", "5672")
 	viper.SetDefault("rabbit.user", "guest")
 	viper.SetDefault("rabbit.password", "guest")
-	viper.SetDefault("rabbit.worker_count", 5)
+	viper.SetDefault("rabbit.worker_count", 6)
 	viper.SetDefault("rabbit.max_ffmpeg_worker", 4)
 	viper.SetDefault("rabbit.job_timeout_minutes", 30)
 
 	viper.SetDefault("grpc.grpc_host", "localhost")
 	viper.SetDefault("grpc.grpc_port", 50051)
+
+	viper.SetDefault("storage.endpoint", "localhost:9000")
+	viper.SetDefault("storage.access_key", "admin")
+	viper.SetDefault("storage.secret_key", "StrongPassword123!")
+	viper.SetDefault("storage.bucket", "videos")
+	viper.SetDefault("storage.use_ssl", false)
 }
 
 /*
